@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SecureShare — Encrypted File Sharing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#05050a;--s1:#0c0c15;--s2:#121220;--s3:#181828;--s4:#1e1e30;
+  --ac:#6c63ff;--ac2:#22d3ee;--ac3:#a78bfa;
+  --bd:rgba(108,99,255,.18);--bdb:rgba(108,99,255,.4);
+  --tx:#e2e8f0;--txm:#64748b;--txd:#94a3b8;
+  --gr:#10b981;--rd:#ef4444;--yw:#f59e0b;
+  --r:12px;--rs:8px;
+}
+html,body{height:100%;font-family:'Syne',sans-serif;background:var(--bg);color:var(--tx);overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 100% 60% at 50% -5%,rgba(108,99,255,.13),transparent 70%),radial-gradient(ellipse 50% 40% at 90% 90%,rgba(34,211,238,.05),transparent 60%);pointer-events:none;z-index:0}
+#app{position:relative;z-index:1;min-height:100vh}
+.mono{font-family:'JetBrains Mono',monospace}
+.container{max-width:1100px;margin:0 auto;padding:0 24px;width:100%}
+.glass{background:rgba(12,12,21,.75);backdrop-filter:blur(20px);border:1px solid var(--bd);border-radius:var(--r)}
+.glass-b{background:rgba(17,17,32,.92);backdrop-filter:blur(24px);border:1px solid var(--bdb);border-radius:var(--r);box-shadow:0 0 40px rgba(108,99,255,.12)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:var(--rs);font-family:'Syne',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:all .2s;border:none;outline:none;white-space:nowrap;text-decoration:none}
+.btn-p{background:linear-gradient(135deg,var(--ac),var(--ac3));color:#fff;box-shadow:0 0 20px rgba(108,99,255,.3)}
+.btn-p:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 0 36px rgba(108,99,255,.5)}
+.btn-s{background:var(--s3);color:var(--txd);border:1px solid var(--bd)}
+.btn-s:hover:not(:disabled){border-color:var(--bdb);color:var(--tx)}
+.btn-d{background:rgba(239,68,68,.12);color:var(--rd);border:1px solid rgba(239,68,68,.22)}
+.btn-d:hover:not(:disabled){background:rgba(239,68,68,.2)}
+.btn-g{background:transparent;color:var(--txm);border:1px solid transparent}
+.btn-g:hover:not(:disabled){background:var(--s2);color:var(--tx);border-color:var(--bd)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+.btn-sm{padding:7px 14px;font-size:13px}
+.btn-ic{padding:8px;border-radius:var(--rs)}
+.fg{display:flex;flex-direction:column;gap:6px}
+.fl{font-size:12px;font-weight:700;color:var(--txd);letter-spacing:.06em;text-transform:uppercase}
+.fi{background:var(--s2);border:1px solid var(--bd);color:var(--tx);padding:11px 14px;border-radius:var(--rs);font-family:'Syne',sans-serif;font-size:15px;width:100%;outline:none;transition:border-color .2s,box-shadow .2s}
+.fi:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(108,99,255,.12)}
+.fi::placeholder{color:var(--txm)}
+select.fi{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.ba{background:rgba(108,99,255,.15);color:var(--ac3);border:1px solid rgba(108,99,255,.25)}
+.bg{background:rgba(16,185,129,.12);color:var(--gr);border:1px solid rgba(16,185,129,.2)}
+.br{background:rgba(239,68,68,.12);color:var(--rd);border:1px solid rgba(239,68,68,.2)}
+.by{background:rgba(245,158,11,.12);color:var(--yw);border:1px solid rgba(245,158,11,.2)}
+.bm{background:var(--s3);color:var(--txm);border:1px solid var(--bd)}
+.pb{width:100%;height:6px;background:var(--s3);border-radius:100px;overflow:hidden}
+.pf{height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));border-radius:100px;transition:width .3s ease;position:relative;overflow:hidden}
+.pf::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);animation:sh 1.5s infinite}
+@keyframes sh{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ani{animation:fadeIn .35s ease forwards}
+.asc{animation:scaleIn .25s ease forwards}
+.asl{animation:slideIn .3s ease forwards}
+.spin{animation:spin 1s linear infinite}
+#toast-c{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--s3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;animation:fadeIn .3s ease;min-width:220px;max-width:320px}
+.toast.s{border-left:3px solid var(--gr)}.toast.e{border-left:3px solid var(--rd)}
+.nav{border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:100;background:rgba(5,5,10,.88);backdrop-filter:blur(20px)}
+.nav-i{display:flex;align-items:center;justify-content:space-between;height:62px}
+.logo{display:flex;align-items:center;gap:9px;text-decoration:none;cursor:pointer}
+.logo-ic{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--ac),var(--ac3));display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(108,99,255,.35)}
+.logo-tx{font-weight:800;font-size:17px;letter-spacing:-.03em;color:var(--tx)}.logo-tx span{color:var(--ac)}
+.loader{width:16px;height:16px;border:2px solid rgba(255,255,255,.25);border-top:2px solid white;border-radius:50%;display:inline-block}
+.divr{height:1px;background:var(--bd)}
+.dz{border:2px dashed var(--bd);border-radius:var(--r);padding:44px 24px;text-align:center;cursor:pointer;background:var(--s2);transition:all .2s}
+.dz.drag{border-color:var(--ac);background:rgba(108,99,255,.07)}
+.dz.has-file{cursor:default;border-color:var(--ac3)}
+.tog{width:44px;height:24px;border-radius:12px;position:relative;cursor:pointer;transition:background .2s;border:1px solid var(--bd);flex-shrink:0}
+.tog-k{position:absolute;top:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+
+/* PREVIEW PANEL */
+.prev-ov{position:fixed;inset:0;z-index:500;background:rgba(2,2,8,.9);backdrop-filter:blur(14px);display:flex;align-items:stretch}
+.prev-scrim{flex:1;cursor:pointer}
+.prev-panel{width:min(540px,100vw);background:var(--s1);border-left:1px solid var(--bdb);display:flex;flex-direction:column;overflow:hidden;box-shadow:-24px 0 60px rgba(0,0,0,.6)}
+.prev-hd{padding:18px 22px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:12px;flex-shrink:0}
+.prev-body{flex:1;overflow-y:auto}
+.prev-sec{padding:18px 22px;border-bottom:1px solid rgba(108,99,255,.1)}
+.prev-sec:last-child{border-bottom:none}
+.prev-sec h4{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txm);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.irow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(108,99,255,.07)}
+.irow:last-child{border-bottom:none}
+.irow .lbl{font-size:13px;color:var(--txm)}
+.irow .val{font-size:13px;font-weight:600;color:var(--tx);text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.media-box{background:var(--s2);border-radius:var(--rs);overflow:hidden;border:1px solid var(--bd)}
+.media-box img{width:100%;max-height:260px;object-fit:contain;display:block;background:var(--s3)}
+.media-box video{width:100%;max-height:260px;display:block;background:#000}
+.media-box audio{width:100%;padding:16px;display:block}
+.code-box{background:var(--s2);border-radius:var(--rs);padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--txd);line-height:1.65;max-height:240px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;border:1px solid var(--bd)}
+.no-prev{padding:36px 24px;text-align:center;color:var(--txm)}
+.lnk-card{background:var(--s2);border-radius:var(--rs);padding:12px 14px;margin-bottom:8px;border:1px solid var(--bd)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(108,99,255,.3);border-radius:10px}
+.page{min-height:100vh;display:flex;flex-direction:column}
+@media(max-width:640px){.container{padding:0 14px}.prev-panel{width:100vw}}
+</style>
+</head>
+<body>
+<div id="toast-c"></div>
+<div id="app"></div>
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+const S={
+  user:JSON.parse(localStorage.getItem('ss_user')||'null'),
+  files:JSON.parse(localStorage.getItem('ss_files')||'[]'),
+  links:JSON.parse(localStorage.getItem('ss_links')||'[]'),
+  route:location.hash.slice(1)||'/',
+};
+const BLOBS={};// fileId->{url,type,text}
+
+function seedDemo(){
+  if(S.files.length)return;
+  S.files=[
+    {id:'f1',name:'Project_Report_Final.pdf',size:4823102,mime:'application/pdf',enc:true,created:Date.now()-172800000,downloads:3},
+    {id:'f2',name:'Database_Schema.sql',size:24580,mime:'text/plain',enc:true,created:Date.now()-86400000,downloads:0},
+    {id:'f3',name:'Demo_Video.mp4',size:152340000,mime:'video/mp4',enc:false,created:Date.now()-18000000,downloads:7},
+    {id:'f4',name:'Architecture_Diagram.png',size:890123,mime:'image/png',enc:true,created:Date.now()-7200000,downloads:1},
+  ];
+  S.links=[
+    {id:'l1',token:'abc123def456',fileId:'f1',exp:Date.now()+82800000,maxDl:10,dlCount:3,active:true,created:Date.now()-3600000},
+    {id:'l2',token:'tok789xyz012',fileId:'f1',exp:Date.now()+21600000,maxDl:5,dlCount:1,active:true,created:Date.now()-7200000},
+    {id:'l3',token:'expired000',fileId:'f3',exp:Date.now()-3600000,maxDl:null,dlCount:7,active:false,created:Date.now()-86400000},
+  ];
+  S.user.storageUsed=S.files.reduce((a,f)=>a+f.size,0);
+  S.user.uploads=S.files.length;S.user.downloads=11;
+}
+function save(){
+  localStorage.setItem('ss_files',JSON.stringify(S.files));
+  localStorage.setItem('ss_links',JSON.stringify(S.links));
+  localStorage.setItem('ss_user',JSON.stringify(S.user));
+}
+function nav(p){S.route=p;history.pushState(null,'',p==='/'?'#':'#'+p);render();}
+window.addEventListener('popstate',()=>{S.route=location.hash.slice(1)||'/';render();});
+
+// ═══════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════
+function toast(msg,type='s'){
+  const tc=document.getElementById('toast-c');
+  const t=document.createElement('div');t.className=`toast ${type}`;
+  t.innerHTML=`<span>${type==='s'?'✓':'✕'}</span><span>${msg}</span>`;
+  tc.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},3500);
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function fmtB(b){if(!b)return'0 B';if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';if(b<1073741824)return(b/1048576).toFixed(1)+' MB';return(b/1073741824).toFixed(2)+' GB';}
+function ago(ts){const d=Date.now()-ts,m=Math.floor(d/60000);if(m<1)return'just now';if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';}
+function fmtDt(ts){return new Date(ts).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+function tleft(exp){const d=exp-Date.now();if(d<=0)return'Expired';const h=Math.floor(d/3600000),m=Math.floor((d%3600000)/60000);return h>0?`${h}h ${m}m left`:`${m}m left`;}
+function uid(){return Math.random().toString(36).slice(2,10)}
+function mIcon(m){if(!m)return'📁';if(m.startsWith('image'))return'🖼️';if(m.startsWith('video'))return'🎥';if(m.startsWith('audio'))return'🎵';if(m.includes('pdf'))return'📄';if(m.includes('zip'))return'📦';if(m.startsWith('text'))return'📝';return'📁';}
+function mCat(m){if(!m)return'other';if(m.startsWith('image'))return'image';if(m.startsWith('video'))return'video';if(m.startsWith('audio'))return'audio';if(m.startsWith('text')||/json|sql|javascript|html|css|xml/.test(m))return'text';return'other';}
+function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ═══════════════════════════════════════
+// CRYPTO (real Web Crypto API)
+// ═══════════════════════════════════════
+async function deriveKey(pass,saltHex){
+  const enc=new TextEncoder(),salt=h2b(saltHex);
+  const km=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+function h2b(h){const b=new Uint8Array(h.length/2);for(let i=0;i<h.length;i+=2)b[i/2]=parseInt(h.slice(i,i+2),16);return b}
+function b2h(b){return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}
+function genSalt(){return b2h(crypto.getRandomValues(new Uint8Array(16)))}
+async function encChunk(key,buf){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,buf);return{ct,ivHex:b2h(iv)};}
+
+// ═══════════════════════════════════════
+// ICONS
+// ═══════════════════════════════════════
+const I={
+  shield:`<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  up:`<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>`,
+  files:`<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+  share:`<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
+  trash:`<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
+  copy:`<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
+  lock:`<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+  unlock:`<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`,
+  dl:`<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+  ok:`<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`,
+  x:`<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  logout:`<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+  clock:`<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  search:`<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+  hdd:`<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>`,
+  trend:`<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
+  eye:`<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  eyeoff:`<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
+  lnk:`<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
+  info:`<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+  alert:`<svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+};
+
+// ═══════════════════════════════════════
+// PREVIEW STATE
+// ═══════════════════════════════════════
+let previewId=null;
+function openPreview(id){previewId=id;refresh();setTimeout(()=>loadMedia(id),60);}
+function closePreview(){previewId=null;refresh();}
+
+async function loadMedia(id){
+  const el=document.getElementById('pm-area');if(!el)return;
+  const f=S.files.find(f=>f.id===id);if(!f)return;
+  const b=BLOBS[id];const cat=mCat(f.mime);
+  if(!b){el.innerHTML=noPrev(f,true);return;}
+  el.innerHTML='';
+  if(cat==='image'){const img=new Image();img.src=b.url;img.alt=f.name;img.style.cssText='width:100%;max-height:280px;object-fit:contain;display:block';el.className='media-box';el.appendChild(img);}
+  else if(cat==='video'){const v=document.createElement('video');v.src=b.url;v.controls=true;v.style.cssText='width:100%;max-height:280px;display:block;background:#000';el.className='media-box';el.appendChild(v);}
+  else if(cat==='audio'){const a=document.createElement('audio');a.src=b.url;a.controls=true;a.style.cssText='width:100%;display:block';el.className='media-box';el.appendChild(a);}
+  else if(cat==='text'&&b.text){const pre=document.createElement('pre');pre.className='code-box';pre.textContent=b.text.slice(0,2500)+(b.text.length>2500?'\n\n... (truncated)':'');el.appendChild(pre);}
+  else{el.innerHTML=noPrev(f,false);}
+}
+function noPrev(f,isDemo){return`<div class="no-prev"><div style="font-size:44px;margin-bottom:10px">${mIcon(f.mime)}</div><p style="font-weight:700;font-size:14px;margin-bottom:6px">${f.name}</p><p style="font-size:13px;line-height:1.6">${isDemo?'Upload a real file to see a live preview here.<br>Demo files show metadata only.':'No preview available for this file type.'}</p></div>`;}
+
+function renderPreviewPanel(f){
+  const links=S.links.filter(l=>l.fileId===f.id);
+  const active=links.filter(l=>l.active&&l.exp>Date.now());
+  return`<div class="prev-ov" onclick="if(event.target.classList.contains('prev-ov')||event.target.classList.contains('prev-scrim'))closePreview()">
+    <div class="prev-scrim"></div>
+    <div class="prev-panel asl">
+
+      <!-- HEADER -->
+      <div class="prev-hd">
+        <div style="width:46px;height:46px;border-radius:12px;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid var(--bd);flex-shrink:0">${mIcon(f.mime)}</div>
+        <div style="flex:1;min-width:0">
+          <p style="font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:5px">${f.name}</p>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            <span class="badge bm">${fmtB(f.size)}</span>
+            ${f.enc?`<span class="badge ba">${I.lock} Encrypted</span>`:`<span class="badge bm">${I.unlock} Plain</span>`}
+            ${active.length?`<span class="badge bg">${I.lnk} ${active.length} active link${active.length>1?'s':''}</span>`:''}
+            ${BLOBS[f.id]?`<span class="badge bg">${I.eye} Preview ready</span>`:''}
+          </div>
+        </div>
+        <button class="btn btn-g btn-sm btn-ic" onclick="closePreview()">${I.x}</button>
+      </div>
+
+      <div class="prev-body">
+
+        <!-- PREVIEW AREA -->
+        <div class="prev-sec">
+          <h4>${I.eye} File Preview</h4>
+          <div id="pm-area">${noPrev(f,!BLOBS[f.id])}</div>
+        </div>
+
+        <!-- FILE DETAILS -->
+        <div class="prev-sec">
+          <h4>${I.info} File Details</h4>
+          <div class="irow"><span class="lbl">Name</span><span class="val mono" style="font-size:12px">${f.name}</span></div>
+          <div class="irow"><span class="lbl">Size</span><span class="val">${fmtB(f.size)}</span></div>
+          <div class="irow"><span class="lbl">Type</span><span class="val mono" style="font-size:12px">${f.mime||'Unknown'}</span></div>
+          <div class="irow"><span class="lbl">Uploaded</span><span class="val">${fmtDt(f.created)}</span></div>
+          <div class="irow"><span class="lbl">Downloads</span><span class="val">${f.downloads} total</span></div>
+          <div class="irow"><span class="lbl">Stored at</span><span class="val" style="color:var(--ac)">Google Drive</span></div>
+        </div>
+
+        <!-- ENCRYPTION -->
+        <div class="prev-sec">
+          <h4>${I.lock} Encryption</h4>
+          ${f.enc?`
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--rs);background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.25);margin-bottom:12px">
+            <span style="color:var(--ac3)">${I.lock}</span>
+            <span style="font-size:13px;font-weight:600;color:var(--ac3)">AES-256-GCM — File is encrypted</span>
+          </div>
+          <div class="irow"><span class="lbl">Algorithm</span><span class="val mono" style="font-size:12px">AES-256-GCM</span></div>
+          <div class="irow"><span class="lbl">Key derivation</span><span class="val mono" style="font-size:12px">PBKDF2-SHA256</span></div>
+          <div class="irow"><span class="lbl">KDF iterations</span><span class="val mono" style="font-size:12px">250,000</span></div>
+          <div class="irow"><span class="lbl">Chunk size</span><span class="val mono" style="font-size:12px">2 MB per chunk</span></div>
+          <div class="irow"><span class="lbl">IV per chunk</span><span class="val mono" style="font-size:12px">96-bit random</span></div>
+          <div class="irow"><span class="lbl">Key stored?</span><span class="val" style="color:var(--gr)">Never — browser only</span></div>
+          <div style="margin-top:10px;padding:10px 12px;background:var(--s2);border-radius:var(--rs);border-left:3px solid var(--ac);font-size:12px;color:var(--txm);line-height:1.65">
+            Each 2MB chunk is encrypted with a unique 96-bit IV. The encryption key is derived from your password via PBKDF2 and never stored on the server.
+          </div>`:
+          `<div style="display:flex;align-items:center;gap:8px;padding:12px 14px;background:rgba(245,158,11,.08);border-radius:var(--rs);border:1px solid rgba(245,158,11,.2)">
+            <span style="color:var(--yw)">${I.unlock}</span>
+            <span style="font-size:13px;color:var(--yw)">Uploaded without encryption</span>
+          </div>`}
+        </div>
+
+        <!-- SHARE LINKS -->
+        <div class="prev-sec">
+          <h4>${I.lnk} Share Links <span style="font-size:12px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--txm);margin-left:4px">(${links.length} total)</span></h4>
+          ${links.length===0?`<p style="color:var(--txm);font-size:13px;padding:4px 0">No share links created yet.</p>`:''}
+          ${links.map(l=>{
+            const exp=l.exp<Date.now()||!l.active;
+            const url=`${getBaseUrl()}#/share/${l.token}`;
+            return`<div class="lnk-card" style="border-color:${exp?'rgba(239,68,68,.18)':'var(--bd)'}">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <span class="badge ${exp?'br':'bg'}">${exp?'Expired':'Active'}</span>
+                ${!exp?`<button class="btn btn-g btn-sm" style="padding:4px 10px;font-size:12px" onclick="cpLink('${url}')">${I.copy} Copy URL</button>`:''}
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--txm)">Expiry</span><span style="font-size:12px;font-weight:600;color:${exp?'var(--rd)':'var(--tx)'}">${exp?fmtDt(l.exp):tleft(l.exp)}</span></div>
+                <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--txm)">Downloads</span><span style="font-size:12px;font-weight:600">${l.dlCount}${l.maxDl?' / '+l.maxDl:' / ∞'}</span></div>
+                ${!exp?`<div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--txm)">Remaining</span><span style="font-size:12px;font-weight:600;color:var(--gr)">${l.maxDl?l.maxDl-l.dlCount:'Unlimited'}</span></div>`:''}
+              </div>
+            </div>`;
+          }).join('')}
+          <button class="btn btn-s btn-sm" style="width:100%;justify-content:center;margin-top:${links.length?'10':'4'}px"
+            onclick="closePreview();openShareM('${f.id}')">
+            ${I.share} Create Share Link
+          </button>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="prev-sec">
+          <h4>Actions</h4>
+          <button class="btn btn-d btn-sm" onclick="closePreview();delFile('${f.id}')">
+            ${I.trash} Delete File
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════
+// UPLOAD VARS
+// ═══════════════════════════════════════
+let selFile=null,selBlob=null,selText=null;
+let useEnc=true,encPw='',showPw=false;
+let upState={phase:'idle',pct:0,spd:'0',msg:''};
+let dTab='files',dSearch='',shareM=null;
+
+async function pickFile(f){
+  if(f.size>53687091200){toast('File exceeds 50GB limit.','e');return;}
+  if(selBlob){URL.revokeObjectURL(selBlob);selBlob=null;selText=null;}
+  selFile=f;upState={phase:'idle',pct:0,spd:'0',msg:''};
+  const cat=mCat(f.type);
+  if(['image','video','audio'].includes(cat)) selBlob=URL.createObjectURL(f);
+  else if(cat==='text'){selBlob=URL.createObjectURL(f);try{selText=await f.text();}catch(e){selText='Could not read file.';}}
+  refresh();setTimeout(inlinePrev,60);
+}
+function inlinePrev(){
+  const el=document.getElementById('ip');if(!el||!selFile)return;
+  const cat=mCat(selFile.type);
+  if(cat==='image'&&selBlob){const img=new Image();img.src=selBlob;img.style.cssText='width:100%;max-height:220px;object-fit:contain;display:block;border-radius:8px;background:var(--s3)';el.appendChild(img);}
+  else if(cat==='video'&&selBlob){const v=document.createElement('video');v.src=selBlob;v.controls=true;v.style.cssText='width:100%;max-height:220px;display:block;border-radius:8px;background:#000';el.appendChild(v);}
+  else if(cat==='audio'&&selBlob){const a=document.createElement('audio');a.src=selBlob;a.controls=true;a.style.cssText='width:100%;display:block;padding:8px 0';el.appendChild(a);}
+  else if(cat==='text'&&selText){const pre=document.createElement('pre');pre.className='code-box';pre.textContent=selText.slice(0,2000)+(selText.length>2000?'\n... (truncated)':'');el.appendChild(pre);}
+  else{el.innerHTML=`<div class="no-prev" style="padding:20px"><div style="font-size:36px;margin-bottom:8px">${mIcon(selFile.type)}</div><p style="font-size:13px">No preview for this file type</p></div>`;}
+}
+
+async function simUpload(file,pass,enc,onPhase,onPct){
+  const CS=2097152,chunks=Math.ceil(file.size/CS)||1;
+  if(enc){
+    onPhase('encrypting');const salt=genSalt();const key=await deriveKey(pass,salt);
+    for(let i=0;i<chunks;i++){await new Promise(r=>setTimeout(r,25+Math.random()*35));const buf=await file.slice(i*CS,Math.min((i+1)*CS,file.size)).arrayBuffer();await encChunk(key,buf);onPct((i+1)/chunks*100,'enc');}
+  }
+  onPhase('uploading');
+  for(let i=0;i<=100;){await new Promise(r=>setTimeout(r,65+Math.random()*60));i+=Math.floor(3+Math.random()*7);onPct(Math.min(i,100),'up');}
+}
+
+// ═══════════════════════════════════════
+// RENDER HELPERS
+// ═══════════════════════════════════════
+function Logo(){return`<div class="logo" onclick="nav('/')"><div class="logo-ic">${I.shield}</div><span class="logo-tx">Secure<span>Share</span></span></div>`;}
+function Sp(){return`<span class="loader spin"></span>`;}
+
+function Nav(right=''){return`<nav class="nav"><div class="container nav-i">${Logo()}<div style="display:flex;align-items:center;gap:12px">${right}</div></div></nav>`;}
+
+// ═══════════════════════════════════════
+// PAGES
+// ═══════════════════════════════════════
+function pgLanding(){
+  const feats=[
+    {e:'🔐',t:'AES-256-GCM',d:'Chunk-level encryption in browser. Key never leaves your device.',c:'#6c63ff'},
+    {e:'⚡',t:'50GB Files',d:'Resumable chunked upload directly to Google Drive. Resume after drops.',c:'#22d3ee'},
+    {e:'⏳',t:'Expiry Links',d:'Set 1h / 24h / custom expiry. Links auto-invalidate after.',c:'#a78bfa'},
+    {e:'⬇️',t:'Download Limits',d:'Cap how many times a link can be used before it locks.',c:'#10b981'},
+    {e:'👁️',t:'File Preview',d:'Preview images, video, audio, and text — before and after upload.',c:'#f59e0b'},
+    {e:'🔑',t:'Zero Knowledge',d:'Backend never sees file bytes. PBKDF2 with 250k iterations.',c:'#ef4444'},
+  ];
+  return`<div class="page">
+    ${Nav(`<button class="btn btn-g btn-sm" onclick="nav('/login')">Log In</button><button class="btn btn-p btn-sm" onclick="nav('/signup')">Get Started</button>`)}
+    <section style="padding:100px 0 70px;text-align:center"><div class="container ani">
+      <div class="badge ba" style="margin:0 auto 22px;display:inline-flex;gap:5px">${I.lock} AES-256-GCM · PBKDF2 · Zero Knowledge</div>
+      <h1 style="font-size:clamp(2.2rem,6vw,4.2rem);font-weight:800;line-height:1.06;letter-spacing:-.04em;margin-bottom:22px">Encrypted file sharing<br><span style="background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent">built for the paranoid.</span></h1>
+      <p style="font-size:17px;color:var(--txd);max-width:520px;margin:0 auto 44px;line-height:1.7">Upload up to 50GB. Encrypt in browser. Share with expiring links. Preview files before and after upload.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-p" style="font-size:15px;padding:14px 36px" onclick="nav('/signup')">Start Sharing Free</button>
+        <button class="btn btn-s" style="font-size:15px;padding:14px 36px" onclick="nav('/login')">Sign In</button>
+      </div>
+    </div></section>
+    <section style="padding:0 0 90px"><div class="container">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+        ${feats.map((f,i)=>`<div class="glass ani" style="padding:24px;animation-delay:${i*.07}s;transition:border-color .2s" onmouseenter="this.style.borderColor='${f.c}44'" onmouseleave="this.style.borderColor='var(--bd)'">
+          <div style="width:42px;height:42px;border-radius:11px;margin-bottom:14px;background:${f.c}18;display:flex;align-items:center;justify-content:center;border:1px solid ${f.c}28;font-size:20px">${f.e}</div>
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:7px">${f.t}</h3>
+          <p style="color:var(--txd);font-size:13.5px;line-height:1.65">${f.d}</p>
+        </div>`).join('')}
+      </div>
+    </div></section>
+    <footer style="border-top:1px solid var(--bd);padding:26px 0;text-align:center"><p style="color:var(--txm);font-size:13px">SecureShare — Computer Engineering Mini Project</p></footer>
+  </div>`;
+}
+
+function pgAuth(mode){
+  const isL=mode==='login';
+  setTimeout(()=>{
+    const form=document.getElementById('af');if(!form)return;
+    form.onsubmit=async e=>{
+      e.preventDefault();const btn=document.getElementById('ab');
+      btn.disabled=true;btn.innerHTML=`${Sp()}${isL?'Signing in...':'Creating...'}`;
+      await new Promise(r=>setTimeout(r,900));
+      const email=document.getElementById('ae').value.trim();
+      const pass=document.getElementById('ap').value;
+      const name=isL?null:document.getElementById('an')?.value.trim();
+      if(!email||!pass||(!isL&&!name)){toast('Fill all fields.','e');btn.disabled=false;btn.innerHTML=isL?'Sign In':'Create Account';return;}
+      S.user={id:uid(),name:name||email.split('@')[0],email,storageUsed:0,uploads:0,downloads:0,created:Date.now()};
+      seedDemo();save();toast(`Welcome${isL?' back':''}, ${S.user.name}! 🎉`);nav('/dashboard');
+    };
+    const tpw=document.getElementById('tpw'),pw=document.getElementById('ap');
+    if(tpw&&pw)tpw.onclick=()=>{pw.type=pw.type==='password'?'text':'password';tpw.innerHTML=pw.type==='password'?I.eye:I.eyeoff;};
+    if(!isL)pw.oninput=()=>{
+      const v=pw.value,bar=document.getElementById('pwb');if(!bar)return;
+      let s=0;if(v.length>=8)s++;if(v.length>=12)s++;if(/[A-Z]/.test(v))s++;if(/\d/.test(v))s++;if(/\W/.test(v))s++;
+      const c=['transparent','#ef4444','#f59e0b','#f59e0b','#10b981','#10b981'],l=['','Weak','Fair','Fair','Strong','Strong'];
+      bar.innerHTML=`<div style="display:flex;gap:3px;margin-bottom:3px">${[1,2,3,4,5].map(i=>`<div style="flex:1;height:3px;border-radius:2px;background:${i<=s?c[s]:'var(--s3)'};transition:background .3s"></div>`).join('')}</div><span style="font-size:11px;color:${c[s]};font-weight:700">${l[s]||''}</span>`;
+    };
+  },50);
+  return`<div class="page" style="align-items:center;justify-content:center;padding:24px">
+    <div class="asc" style="width:100%;max-width:410px">
+      <div style="text-align:center;margin-bottom:32px">
+        <div style="width:54px;height:54px;border-radius:15px;margin:0 auto 14px;background:linear-gradient(135deg,var(--ac),var(--ac3));display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(108,99,255,.4)">${I.shield}</div>
+        <h1 style="font-size:26px;font-weight:800;letter-spacing:-.03em">${isL?'Welcome back':'Create account'}</h1>
+        <p style="color:var(--txm);margin-top:5px;font-size:14px">${isL?'Sign in to SecureShare':'Start sharing securely'}</p>
+      </div>
+      <div class="glass-b" style="padding:30px">
+        <form id="af" style="display:flex;flex-direction:column;gap:18px">
+          ${!isL?`<div class="fg"><label class="fl">Full Name</label><input id="an" class="fi" type="text" placeholder="Ravi Sharma" required/></div>`:''}
+          <div class="fg"><label class="fl">Email</label><input id="ae" class="fi" type="email" placeholder="you@example.com" required/></div>
+          <div class="fg"><label class="fl">Password</label>
+            <div style="position:relative"><input id="ap" class="fi" type="password" placeholder="Min. 8 characters" style="padding-right:42px" required/>
+            <button type="button" id="tpw" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txm);display:flex;padding:0">${I.eye}</button></div>
+            ${!isL?`<div id="pwb" style="margin-top:7px"></div>`:''}
+          </div>
+          <button id="ab" type="submit" class="btn btn-p" style="justify-content:center;padding:13px;margin-top:4px">${isL?'Sign In':'Create Account'}</button>
+        </form>
+      </div>
+      <p style="text-align:center;margin-top:18px;color:var(--txm);font-size:13px">
+        ${isL?`No account? <a href="#" onclick="nav('/signup');return false" style="color:var(--ac);font-weight:700;text-decoration:none">Create free</a>`:
+        `Have account? <a href="#" onclick="nav('/login');return false" style="color:var(--ac);font-weight:700;text-decoration:none">Sign in</a>`}
+      </p>
+    </div>
+  </div>`;
+}
+
+function pgDashboard(){
+  const tot=S.files.reduce((a,f)=>a+f.size,0);
+  const tdl=S.files.reduce((a,f)=>a+f.downloads,0);
+  const stats=[{l:'Total Files',v:S.files.length,ic:I.files,c:'var(--ac)'},{l:'Storage Used',v:fmtB(tot),ic:I.hdd,c:'var(--ac2)'},{l:'Downloads',v:tdl,ic:I.trend,c:'var(--ac3)'}];
+  const filt=S.files.filter(f=>f.name.toLowerCase().includes(dSearch.toLowerCase()));
+  let tab='';
+  if(dTab==='upload') tab=tabUpload();
+  else tab=`<div style="display:flex;gap:10px;margin-bottom:18px">
+    <div style="flex:1;position:relative"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--txm)">${I.search}</span>
+    <input class="fi" style="padding-left:36px" placeholder="Search files..." value="${dSearch}" oninput="dSearch=this.value;refresh()"/></div>
+  </div>
+  ${filt.length===0?`<div style="text-align:center;padding:70px 0">
+    <div style="font-size:44px;margin-bottom:14px">📂</div>
+    <p style="font-weight:700;font-size:16px;margin-bottom:7px">${dSearch?'No results':'No files yet'}</p>
+    <p style="color:var(--txm);font-size:14px;margin-bottom:22px">${dSearch?'Try another search.':'Upload your first file.'}</p>
+    ${!dSearch?`<button class="btn btn-p" onclick="dTab='upload';refresh()">${I.up} Upload a File</button>`:''}
+  </div>`:
+  `<div style="display:flex;flex-direction:column;gap:10px">${filt.map(f=>cardFile(f)).join('')}</div>`}`;
+
+  return`<div class="page">
+    ${Nav(`<div style="display:flex;align-items:center;gap:7px;color:var(--txd);font-size:13px;font-weight:600">
+      <div style="width:27px;height:27px;border-radius:50%;background:rgba(108,99,255,.15);border:1px solid var(--bdb);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--ac)">${(S.user?.name||'U')[0].toUpperCase()}</div>${S.user?.name}
+    </div>
+    <button class="btn btn-g btn-sm" onclick="S.user=null;save();toast('Logged out.');nav('/')">${I.logout} Logout</button>`)}
+    <div class="container" style="padding-top:32px;padding-bottom:60px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:13px;margin-bottom:28px">
+        ${stats.map(s=>`<div class="glass" style="padding:17px 18px;display:flex;gap:11px;align-items:center">
+          <div style="width:38px;height:38px;border-radius:9px;background:${s.c}18;display:flex;align-items:center;justify-content:center;border:1px solid ${s.c}28;color:${s.c};flex-shrink:0">${s.ic}</div>
+          <div><p class="mono" style="font-size:19px;font-weight:700;line-height:1">${s.v}</p><p style="color:var(--txm);font-size:12px;margin-top:3px">${s.l}</p></div>
+        </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:2px;margin-bottom:22px;border-bottom:1px solid var(--bd)">
+        ${[{id:'files',l:'My Files',ic:I.files},{id:'upload',l:'Upload',ic:I.up.replace('20','15').replace('20','15')}].map(t=>`
+        <button onclick="dTab='${t.id}';refresh()" style="display:flex;align-items:center;gap:6px;padding:10px 17px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:'Syne',sans-serif;color:${dTab===t.id?'var(--ac)':'var(--txm)'};border-bottom:2px solid ${dTab===t.id?'var(--ac)':'transparent'};margin-bottom:-1px;transition:color .2s">${t.ic} ${t.l}</button>`).join('')}
+      </div>
+      <div class="ani">${tab}</div>
+    </div>
+    ${previewId?renderPreviewPanel(S.files.find(f=>f.id===previewId)||S.files[0]):''}
+    ${shareM?renderShareM():''}
+  </div>`;
+}
+
+function cardFile(f){
+  const lnks=S.links.filter(l=>l.fileId===f.id&&l.active&&l.exp>Date.now());
+  const hasB=!!BLOBS[f.id];
+  return`<div class="glass" style="padding:15px 18px;display:flex;gap:12px;align-items:center;transition:border-color .2s,background .2s;cursor:pointer"
+    onmouseenter="this.style.borderColor='var(--bdb)';this.style.background='rgba(108,99,255,.04)'"
+    onmouseleave="this.style.borderColor='var(--bd)';this.style.background=''"
+    onclick="if(!event.target.closest('button'))openPreview('${f.id}')">
+    <div style="width:44px;height:44px;border-radius:11px;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid var(--bd);flex-shrink:0;position:relative">
+      ${mIcon(f.mime)}
+      ${hasB?`<div title="Preview available" style="position:absolute;bottom:-2px;right:-2px;width:11px;height:11px;border-radius:50%;background:var(--gr);border:2px solid var(--s1)"></div>`:''}
+    </div>
+    <div style="flex:1;min-width:0">
+      <p style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:5px">${f.name}</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span style="color:var(--txm);font-size:12px">${fmtB(f.size)}</span>
+        <span style="color:var(--bd)">·</span>
+        <span style="color:var(--txm);font-size:12px">${ago(f.created)}</span>
+        ${f.enc?`<span class="badge ba">${I.lock} Encrypted</span>`:''}
+        ${lnks.length?`<span class="badge bg">${I.lnk} ${lnks.length} link${lnks.length>1?'s':''}</span>`:''}
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+      <span style="font-size:11px;color:var(--txm);margin-right:4px">${I.eye} Preview</span>
+      <button class="btn btn-s btn-sm btn-ic" title="Share" onclick="event.stopPropagation();openShareM('${f.id}')">${I.share}</button>
+      <button class="btn btn-d btn-sm btn-ic" title="Delete" onclick="event.stopPropagation();delFile('${f.id}')">${I.trash}</button>
+    </div>
+  </div>`;
+}
+
+function tabUpload(){
+  const ph=upState.phase;const isA=ph==='encrypting'||ph==='uploading'||ph==='saving';
+  const cat=selFile?mCat(selFile.type):'';
+  const hasPrev=selFile&&(cat==='image'||cat==='video'||cat==='audio'||cat==='text');
+  return`<div style="max-width:580px" class="ani">
+    <div class="glass-b" style="padding:26px">
+      <h2 style="font-size:17px;font-weight:700;margin-bottom:5px">Upload a File</h2>
+      <p style="color:var(--txm);font-size:13.5px;margin-bottom:22px;line-height:1.6">Files are encrypted chunk-by-chunk in your browser (AES-256-GCM). Images, video, audio, and text show a live preview before upload.</p>
+
+      <!-- DROP ZONE -->
+      <div id="dz" class="dz${selFile?' has-file':''}" onclick="${selFile?'':'trigPick()'}"
+        ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')"
+        ondrop="onDrop(event)">
+        ${selFile?`<div style="display:flex;align-items:center;gap:12px;justify-content:center">
+          <div style="font-size:30px">${mIcon(selFile.type)}</div>
+          <div style="text-align:left"><p style="font-weight:700;font-size:14px;margin-bottom:3px">${selFile.name}</p><p style="color:var(--txm);font-size:12px">${fmtB(selFile.size)} · ${selFile.type||'Unknown'}</p></div>
+          ${!isA?`<button class="btn btn-g btn-sm btn-ic" onclick="clearSel()" style="margin-left:auto">${I.x}</button>`:''}
+        </div>`:
+        `<div>
+          <div style="width:56px;height:56px;border-radius:14px;margin:0 auto 14px;background:rgba(108,99,255,.12);display:flex;align-items:center;justify-content:center;border:1px solid var(--bdb)">${I.up}</div>
+          <p style="font-weight:700;font-size:15px;margin-bottom:5px">Drop file or click to browse</p>
+          <p style="color:var(--txm);font-size:13px">Any type · Up to 50GB · Images/video/text show preview</p>
+        </div>`}
+      </div>
+      <input type="file" id="fi" style="display:none" onchange="onFilePick(event)"/>
+
+      ${selFile&&ph==='idle'?`
+      <!-- BEFORE-UPLOAD PREVIEW -->
+      ${hasPrev?`<div style="margin-top:16px" class="ani">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txm)">${I.eye} Preview</span>
+          <span class="badge bg" style="font-size:10px">Before Upload</span>
+        </div>
+        <div id="ip" style="border-radius:var(--rs);overflow:hidden;border:1px solid var(--bd);background:var(--s2);min-height:60px"></div>
+      </div>`:''}
+
+      <!-- OPTIONS -->
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:14px">
+        <div class="glass" style="padding:14px;display:flex;align-items:center;gap:12px">
+          <div style="width:34px;height:34px;border-radius:9px;background:${useEnc?'rgba(108,99,255,.15)':'var(--s3)'};display:flex;align-items:center;justify-content:center;border:1px solid ${useEnc?'var(--bdb)':'var(--bd)'};flex-shrink:0">${I.lock}</div>
+          <div style="flex:1"><p style="font-weight:600;font-size:13.5px">AES-256-GCM Encryption</p><p style="color:var(--txm);font-size:12px;margin-top:2px">Encrypt in browser — key never stored</p></div>
+          <div class="tog ${useEnc?'on':'off'}" style="background:${useEnc?'var(--ac)':'var(--s3)'}" onclick="useEnc=!useEnc;refresh();setTimeout(inlinePrev,60)">
+            <div class="tog-k" style="left:${useEnc?'22':'2'}px"></div>
+          </div>
+        </div>
+        ${useEnc?`<div class="fg">
+          <label class="fl">${I.lock} Encryption Password</label>
+          <div style="position:relative">
+            <input id="epw" class="fi" type="${showPw?'text':'password'}" placeholder="Strong password for encryption" value="${encPw}" oninput="encPw=this.value" style="padding-right:42px"/>
+            <button type="button" onclick="showPw=!showPw;refresh();setTimeout(inlinePrev,60)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txm);display:flex;padding:0">${showPw?I.eyeoff:I.eye}</button>
+          </div>
+          <p style="font-size:11.5px;color:var(--txm);margin-top:4px">⚠️ NOT saved on server — required for decryption. Store it safely.</p>
+        </div>`:''}
+        <button class="btn btn-p" onclick="startUp()" style="justify-content:center;padding:13px">⚡ ${useEnc?'Encrypt & Upload':'Upload File'}</button>
+      </div>`:''}
+
+      ${isA?`<div style="margin-top:16px" class="ani">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+          <span style="font-size:13px;font-weight:600;color:var(--txd)">${ph==='encrypting'?'🔐 Encrypting chunks...':ph==='saving'?'💾 Saving...':'📡 Uploading to Drive...'}</span>
+          <span class="mono" style="font-size:12px;color:var(--ac)">${upState.pct.toFixed(1)}%${upState.spd!=='0'&&ph==='uploading'?` · ${upState.spd} MB/s`:''}</span>
+        </div>
+        <div class="pb"><div class="pf" style="width:${upState.pct}%"></div></div>
+        <p style="color:var(--txm);font-size:12px;margin-top:7px">${upState.msg}</p>
+      </div>`:''}
+      ${ph==='done'?`<div class="ani" style="margin-top:14px;display:flex;align-items:center;gap:7px;color:var(--gr)">${I.ok}<span style="font-size:14px;font-weight:700">Uploaded! Click the file card to preview it.</span></div>`:''}
+      ${ph==='error'?`<div class="ani" style="margin-top:14px"><div style="display:flex;align-items:center;gap:7px;color:var(--rd);margin-bottom:8px">${I.x}<span style="font-size:14px;font-weight:700">Upload failed</span></div><button class="btn btn-s btn-sm" onclick="upState={phase:'idle',pct:0};refresh()">Try Again</button></div>`:''}
+    </div>
+  </div>`;
+}
+
+function renderShareM(){
+  const f=S.files.find(f=>f.id===shareM.file);if(!f)return'';const r=shareM.result;
+  return`<div style="position:fixed;inset:0;z-index:400;background:rgba(5,5,10,.88);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this){shareM=null;refresh()}">
+    <div class="glass-b asc" style="width:100%;max-width:440px;padding:28px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px">
+        <div><h3 style="font-size:17px;font-weight:700">Share File</h3><p style="color:var(--txm);font-size:12px;margin-top:3px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</p></div>
+        <button class="btn btn-g btn-sm btn-ic" onclick="shareM=null;refresh()">${I.x}</button>
+      </div>
+      ${!r?`<div style="display:flex;flex-direction:column;gap:16px;margin-bottom:22px">
+        ${isLocal()?`<div style="display:flex;gap:7px;align-items:flex-start;padding:10px 12px;border-radius:var(--rs);background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);font-size:12px;line-height:1.6">
+          <span style="color:var(--yw);flex-shrink:0">⚠️</span>
+          <div style="color:var(--yw)"><strong>Local file detected.</strong> Share links will only work on this device. Host this HTML file online (Netlify, GitHub Pages) for shareable links.</div>
+        </div>`:''}
+        <div class="fg"><label class="fl">${I.clock} Expiry Time</label>
+          <select class="fi" id="se"><option value="1">1 hour</option><option value="6">6 hours</option><option value="24" selected>24 hours</option><option value="72">3 days</option><option value="168">7 days</option><option value="720">30 days</option></select></div>
+        <div class="fg"><label class="fl">Max Downloads (optional)</label>
+          <input class="fi" id="sd" type="number" placeholder="Unlimited" min="1" max="1000"/>
+          <p style="font-size:11.5px;color:var(--txm);margin-top:4px">Leave blank for unlimited</p></div>
+      </div>
+      <button class="btn btn-p" id="sb" onclick="doShare('${f.id}')" style="width:100%;justify-content:center;padding:13px">${I.share} Generate Link</button>`:
+      `<div class="ani">
+        <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.22);border-radius:var(--rs);padding:14px;margin-bottom:18px;display:flex;gap:9px">
+          <span style="color:var(--gr)">${I.ok}</span>
+          <div><p style="font-weight:700;color:var(--gr);font-size:13.5px">Link created!</p><p style="font-size:12px;color:var(--txm);margin-top:2px">${new Date(r.exp).toLocaleString()}${r.maxDl?' · Max '+r.maxDl+' downloads':' · Unlimited'}</p></div>
+        </div>
+        <div style="margin-bottom:16px">
+          <label class="fl" style="margin-bottom:8px;display:block">Share URL</label>
+          ${isLocal()?`<div style="display:flex;gap:7px;align-items:flex-start;padding:10px 12px;border-radius:var(--rs);background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);margin-bottom:10px;font-size:12px;line-height:1.6">
+            <span style="color:var(--yw);flex-shrink:0;margin-top:1px">⚠️</span>
+            <span style="color:var(--yw)"><strong>Running locally.</strong> This link works only on <em>this device</em>. To share with others, host this file on Netlify, GitHub Pages, or a web server first.</span>
+          </div>`:''}
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="fi mono" readonly id="share-url-inp" value="${r.url}" style="font-size:11px;padding:10px 12px"/>
+            <button class="btn btn-p btn-sm" style="flex-shrink:0;padding:10px 13px" id="cb" onclick="cpLink('${r.url}')">${I.copy}</button>
+          </div>
+          ${isLocal()?`<p style="font-size:11px;color:var(--txm);margin-top:6px">Token only: <span class="mono" style="color:var(--ac3);font-size:11px">${r.token}</span></p>`:''}
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-s" style="flex:1;justify-content:center" onclick="shareM={file:'${f.id}',result:null};refresh()">Another</button>
+          <button class="btn btn-g" style="flex:1;justify-content:center" onclick="shareM=null;refresh()">Done</button>
+        </div>
+      </div>`}
+    </div>
+  </div>`;
+}
+
+function pgShare(token){
+  const lnk=S.links.find(l=>l.token===token);const file=lnk?S.files.find(f=>f.id===lnk.fileId):null;
+  let st='ok';if(!lnk||!file)st='404';else if(!lnk.active||lnk.exp<Date.now())st='exp';else if(lnk.maxDl&&lnk.dlCount>=lnk.maxDl)st='lim';
+  const W=inner=>`<div class="page" style="align-items:center;justify-content:center;padding:24px;min-height:100vh"><div style="width:100%;max-width:470px"><div style="text-align:center;margin-bottom:24px">${Logo()}</div><div class="glass-b asc" style="padding:30px">${inner}</div></div></div>`;
+  const errs={404:{e:'❓',c:'var(--txm)',t:'Not Found',m:"This link doesn't exist."},exp:{e:'⏳',c:'var(--yw)',t:'Link Expired',m:'This share link has expired.'},lim:{e:'⬇️',c:'var(--rd)',t:'Limit Reached',m:'Max downloads reached for this link.'}};
+  if(errs[st]){const e=errs[st];return W(`<div style="text-align:center;padding:20px 0"><div style="font-size:52px;margin-bottom:16px">${e.e}</div><h2 style="font-size:20px;font-weight:800;margin-bottom:10px">${e.t}</h2><p style="color:var(--txm);font-size:14px">${e.m}</p></div>`);}
+  const tl=lnk.exp-Date.now(),hl=Math.floor(tl/3600000),ml=Math.floor((tl%3600000)/60000),rem=lnk.maxDl?lnk.maxDl-lnk.dlCount:null;
+  setTimeout(()=>{
+    const btn=document.getElementById('dlb'),pw=document.getElementById('dp'),tpw=document.getElementById('tpw2');
+    if(tpw&&pw)tpw.onclick=()=>{pw.type=pw.type==='password'?'text':'password';tpw.innerHTML=pw.type==='password'?I.eye:I.eyeoff;};
+    if(btn)btn.onclick=async()=>{
+      const p=pw?.value||'';if(file.enc&&!p){toast('Enter decryption password.','e');return;}
+      btn.disabled=true;const prg=document.getElementById('dlp'),bar=document.getElementById('dlb2'),txt=document.getElementById('dlt');if(prg)prg.style.display='block';
+      for(let i=0;i<=80;){await new Promise(r=>setTimeout(r,60+Math.random()*55));i+=Math.floor(4+Math.random()*6);if(bar)bar.style.width=Math.min(i,80)+'%';if(txt)txt.textContent=`Downloading... ${Math.min(i,80)}%`;}
+      if(file.enc){if(txt)txt.textContent='Decrypting chunks...';for(let i=80;i<=100;){await new Promise(r=>setTimeout(r,40+Math.random()*40));i+=Math.floor(3+Math.random()*5);if(bar)bar.style.width=Math.min(i,100)+'%';}}
+      lnk.dlCount++;file.downloads++;if(lnk.maxDl&&lnk.dlCount>=lnk.maxDl)lnk.active=false;save();
+      if(txt)txt.textContent='';const done=document.getElementById('dld');if(done)done.style.display='flex';btn.style.display='none';toast('Downloaded & decrypted! 🎉');
+    };
+  },50);
+  return W(`
+    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:20px">
+      <div style="width:50px;height:50px;border-radius:13px;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid var(--bd);flex-shrink:0">${mIcon(file.mime)}</div>
+      <div style="flex:1;min-width:0">
+        <h2 style="font-size:16px;font-weight:700;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</h2>
+        <div style="display:flex;gap:5px;flex-wrap:wrap"><span class="badge bm">${fmtB(file.size)}</span>${file.enc?`<span class="badge ba">${I.lock} Encrypted</span>`:''}${rem!==null?`<span class="badge by">${rem} left</span>`:''}</div>
+      </div>
+    </div>
+    <div class="divr" style="margin-bottom:16px"></div>
+    <div style="display:flex;gap:7px;align-items:center;padding:10px 13px;border-radius:var(--rs);background:var(--s2);border:1px solid var(--bd);margin-bottom:16px;font-size:13px">${I.clock}<span style="color:var(--txm)">Expires in <strong style="color:var(--tx)">${hl>0?`${hl}h ${ml}m`:`${ml}m`}</strong> · ${lnk.dlCount} downloads so far</span></div>
+    ${file.enc?`<div class="fg" style="margin-bottom:18px"><label class="fl">${I.lock} Decryption Password</label>
+      <div style="position:relative"><input id="dp" class="fi" type="password" placeholder="Enter decryption password" style="padding-right:42px"/>
+      <button type="button" id="tpw2" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txm);display:flex;padding:0">${I.eye}</button></div>
+      <p style="font-size:11.5px;color:var(--txm);margin-top:4px">Ask the sender for the password.</p></div>`:''}
+    <div id="dlp" style="display:none;margin-bottom:16px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span id="dlt" style="font-size:13px;font-weight:600;color:var(--txd)">Downloading...</span></div><div class="pb"><div class="pf" id="dlb2" style="width:0%"></div></div></div>
+    <div id="dld" style="display:none;align-items:center;gap:7px;color:var(--gr);margin-bottom:14px">${I.ok}<span style="font-size:14px;font-weight:700">Downloaded & decrypted!</span></div>
+    <button id="dlb" class="btn btn-p" style="width:100%;justify-content:center;padding:13px;font-size:15px">${I.dl} ${file.enc?'Download & Decrypt':'Download File'}</button>
+    <div class="divr" style="margin:18px 0 14px"></div>
+    <p style="text-align:center;font-size:12px;color:var(--txm)">Powered by <a href="#" onclick="nav('/');return false" style="color:var(--ac);text-decoration:none;font-weight:700">SecureShare</a></p>
+  `);
+}
+
+// ═══════════════════════════════════════
+// EVENT HANDLERS
+// ═══════════════════════════════════════
+function trigPick(){document.getElementById('fi')?.click();}
+function onFilePick(e){const f=e.target.files[0];if(f)pickFile(f);}
+function onDrop(e){e.preventDefault();document.getElementById('dz')?.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)pickFile(f);}
+function clearSel(){if(selBlob){URL.revokeObjectURL(selBlob);selBlob=null;selText=null;}selFile=null;upState={phase:'idle',pct:0};refresh();}
+
+async function startUp(){
+  if(!selFile)return;
+  if(useEnc&&!encPw){toast('Enter an encryption password.','e');return;}
+  upState={phase:'idle',pct:0,spd:'0',msg:''};
+  try{
+    await simUpload(selFile,encPw,useEnc,
+      ph=>{upState.phase=ph;refresh();},
+      (pct,type)=>{
+        upState.pct=pct;
+        if(type==='up'){upState.spd=(2+Math.random()*8).toFixed(1);upState.msg=`Uploading — ${pct.toFixed(1)}% at ${upState.spd} MB/s`;}
+        else upState.msg=`Encrypting chunk ${Math.ceil(pct/100*Math.ceil(selFile.size/2097152))} — ${pct.toFixed(0)}%`;
+        refresh();
+      }
+    );
+    upState.phase='saving';upState.pct=100;refresh();
+    await new Promise(r=>setTimeout(r,600));
+    const nf={id:uid(),name:selFile.name,size:selFile.size,mime:selFile.type,enc:useEnc,created:Date.now(),downloads:0};
+    if(selBlob)BLOBS[nf.id]={url:selBlob,type:selFile.type,text:selText};
+    S.files.unshift(nf);S.user.uploads=(S.user.uploads||0)+1;S.user.storageUsed=(S.user.storageUsed||0)+nf.size;save();
+    upState.phase='done';toast(`${nf.name} uploaded! Click it to preview. 🎉`);
+    selFile=null;selBlob=null;selText=null;encPw='';useEnc=true;
+    refresh();setTimeout(()=>{dTab='files';upState={phase:'idle',pct:0};refresh();},3200);
+  }catch(err){upState.phase='error';upState.msg=err.message;toast('Upload failed.','e');refresh();}
+}
+function delFile(id){
+  if(!confirm('Delete this file?'))return;
+  if(previewId===id)previewId=null;
+  if(BLOBS[id]){URL.revokeObjectURL(BLOBS[id].url);delete BLOBS[id];}
+  S.files=S.files.filter(f=>f.id!==id);S.links=S.links.filter(l=>l.fileId!==id);save();toast('File deleted.');refresh();
+}
+function openShareM(id){shareM={file:id,result:null};refresh();}
+// Returns the base page URL, handling both file:// and http(s):// hosting
+function getBaseUrl(){return location.href.split('#')[0];}
+function isLocal(){return location.protocol==='file:';}
+
+function doShare(fid){
+  const btn=document.getElementById('sb');if(btn){btn.disabled=true;btn.innerHTML=`${Sp()} Generating...`;}
+  setTimeout(()=>{
+    const h=parseFloat(document.getElementById('se')?.value||'24');
+    const md=parseInt(document.getElementById('sd')?.value)||null;
+    const tok=uid()+uid();
+    const lnk={id:uid(),token:tok,fileId:fid,exp:Date.now()+h*3600000,maxDl:md,dlCount:0,active:true,created:Date.now()};
+    S.links.push(lnk);save();
+    shareM.result={url:`${getBaseUrl()}#/share/${tok}`,token:tok,exp:lnk.exp,maxDl:md};
+    refresh();
+  },800);
+}
+function cpLink(url){
+  // Try modern clipboard API first
+  if(navigator.clipboard&&location.protocol!=='file:'){
+    navigator.clipboard.writeText(url).then(()=>{toast('Link copied!');const b=document.getElementById('cb');if(b){b.innerHTML=I.ok;setTimeout(()=>{if(b)b.innerHTML=I.copy;},2000);}}).catch(()=>fallbackCopy(url));
+  } else {
+    fallbackCopy(url);
+  }
+}
+function fallbackCopy(url){
+  // Fallback: select the input field text (works on file://)
+  const inp=document.getElementById('share-url-inp');
+  if(inp){inp.select();inp.setSelectionRange(0,99999);try{document.execCommand('copy');toast('Link copied!');const b=document.getElementById('cb');if(b){b.innerHTML=I.ok;setTimeout(()=>{if(b)b.innerHTML=I.copy;},2000);}}catch(e){toast('Select the URL and copy manually.','e');}}
+}
+function refresh(){const app=document.getElementById('app');if(!app)return;app.innerHTML=S.route.startsWith('/share/')?pgShare(S.route.slice(8)):S.route==='/dashboard'?pgDashboard():S.route==='/login'?pgAuth('login'):S.route==='/signup'?pgAuth('signup'):pgLanding();if(previewId){const f=S.files.find(f=>f.id===previewId);if(f)loadMedia(previewId);}}
+
+// ═══════════════════════════════════════
+// ROUTER
+// ═══════════════════════════════════════
+function render(){
+  const r=S.route;
+  if(r.startsWith('/share/')){document.getElementById('app').innerHTML=pgShare(r.slice(8));return;}
+  if(!S.user&&r==='/dashboard'){nav('/login');return;}
+  if(S.user&&(r==='/'||r==='/login'||r==='/signup')){nav('/dashboard');return;}
+  if(r==='/'||!r)document.getElementById('app').innerHTML=pgLanding();
+  else if(r==='/login')document.getElementById('app').innerHTML=pgAuth('login');
+  else if(r==='/signup')document.getElementById('app').innerHTML=pgAuth('signup');
+  else if(r==='/dashboard')document.getElementById('app').innerHTML=pgDashboard();
+  else document.getElementById('app').innerHTML=pgLanding();
+}
+render();
+</script>
+</body>
+</html>
